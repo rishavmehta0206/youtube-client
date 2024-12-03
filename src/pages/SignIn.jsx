@@ -46,8 +46,8 @@ const SignIn = () => {
   async function userLogin() {
     dispatch(loginStart());
     try {
-      const { data } = await baseUrlCall.post(
-        "/auth/signin",
+      const { data } = await axios.post(
+        "https://tube-server.vercel.app/api/auth/signin",
         { email, password }
       );
       console.log(data);
