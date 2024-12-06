@@ -21,7 +21,7 @@ import { Link } from "react-router-dom";
 
 const Menu = () => {
   return (
-    <div className="h-screen max-w-[400px] sticky top-0 overflow-y-auto  text-white ">
+    <div className="h-screen w-1/6 sticky top-0 overflow-y-auto  text-white ">
       <div className=" py-[18px] px-[16px]">
         <div className="flex font-bold text-2xl mb-6">Youtube</div>
         <Link to='/' className="flex items-center gap-[20px] cursor-pointer py-[7.5px]">
