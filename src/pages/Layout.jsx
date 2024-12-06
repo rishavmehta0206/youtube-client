@@ -8,9 +8,9 @@ import Upload from "../components/Upload";
 const Layout = () => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="flex bg-[#1e1f20] relative w-full">
+    <div className="flex bg-[rgb(30,31,32)] relative w-full">
       <Menu />
-      <div className="w-full">
+      <div className=" w-5/6">
         <Navbar setOpen={setOpen} />
         <div className=" min-h-screen">
           <Outlet />
