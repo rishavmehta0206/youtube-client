@@ -1,21 +1,22 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginFailure, loginStart, loginSuccess } from "../reducer/userSlice";
 import { useNavigate } from "react-router-dom";
-import { baseUrlCall } from "../utils/api";
+import axios from "axios";
 
 const SignIn = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const dispatch = useDispatch();
   const [image, setImage] = useState(null);
   const [img, setImg] = useState(null);
-  const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [formType, setFormType] = useState("login");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const uploadFile = async (file, urlType) => {
+  const uploadFile = async (file) => {
     if (file) {
       try {
         const formData = new FormData();
@@ -24,205 +25,165 @@ const SignIn = () => {
         formData.append("cloud_name", "deklig5em");
 
         const response = await fetch(
-          `https://api.cloudinary.com/v1_1/deklig5em/${
-            urlType === "videoUrl" ? "video" : "image"
-          }/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
+          `https://api.cloudinary.com/v1_1/deklig5em/image/upload`,
+          { method: "POST", body: formData }
         );
 
         const data = await response.json();
         setImg(data.secure_url);
       } catch (error) {
-        setImageLoader(false);
-        setVideoLoader(false);
-        console.error("Error uploading to Cloudinary:", error);
+        setErrorMessage("Error uploading image");
       }
     }
   };
 
   async function userLogin() {
     dispatch(loginStart());
+    setLoading(true);
+    setErrorMessage("");
     try {
       const { data } = await axios.post(
         "https://tube-server.vercel.app/api/auth/signin",
         { email, password }
       );
-      console.log(data);
       localStorage.setItem("user", JSON.stringify(data));
       dispatch(loginSuccess(data));
       navigate("/");
     } catch (error) {
       dispatch(loginFailure());
+      setErrorMessage(error.response?.data?.message || "Login failed.");
+    } finally {
+      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    image && uploadFile(image, "imgUrl");
-  }, [image]);
-
   async function userRegister() {
-    // dispatch(loginStart());
+    setLoading(true);
+    setErrorMessage("");
+    if (!name || !email || !password) {
+      setErrorMessage("All fields are required.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      if (image) await uploadFile(image);
       await axios.post(
         "https://tube-server.vercel.app/api/auth/signup",
         { name, email, password, img }
       );
-      //   console.log(data);
-      //   localStorage.setItem("user", JSON.stringify(data));
-      //   dispatch(loginSuccess(data));
       setFormType("login");
     } catch (error) {
-      //   dispatch(loginFailure());
+      setErrorMessage(error.response?.data?.message || "Registration failed.");
+    } finally {
+      setLoading(false);
+      setName("");
+      setEmail("");
+      setPassword("");
+      setImage(null);
     }
   }
 
+  useEffect(() => {
+    if (image) uploadFile(image);
+  }, [image]);
+
   return (
-    <div className={`flex items-center justify-center h-screen bg-black`}>
-      <div className="rounded-md  text-white p-2 bg-[#1e1f20] ">
+    <div className="flex items-center justify-center h-screen bg-black">
+      <div className="rounded-md text-white p-4 bg-[#1e1f20]">
         {formType === "login" ? (
-          <div className="flex w-[900px] h-[420px] p-4 relative">
-            <div className="flex-1">
-              <div className="text-4xl mb-7 font-semibold">YourTube</div>
-              <p className="text-4xl mb-4">Create A YourTube Account</p>
-              <span>Enter email and password.</span>
-            </div>
-            <div className="flex-1 flex flex-col justify-center gap-4 ">
-              <div className="flex flex-col gap-4 w-full relative mt-[-65px]">
-                <input
-                  onChange={(e) => setName(e.target.value)}
-                  className="border w-full bg-transparent outline-none p-2 rounded-sm"
-                  type="text"
-                  placeholder="Enter username"
-                />
-                <input
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border w-full bg-transparent outline-none p-2 rounded-sm"
-                  type="text"
-                  placeholder="Enter email"
-                />
-                <input
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border w-full bg-transparent outline-none p-2 rounded-sm"
-                  type="text"
-                  placeholder="Enter password"
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="border w-full border-soft text-text rounded-sm p-2.5 bg-transparent"
-                  onChange={(e) => setImage(e.target.files[0])}
-                />
-              </div>
-              <p className="text-blue-400 font-thin">
-                Already have an account?{" "}
-                <span
-                  onClick={() => setFormType("register")}
-                  className=" font-bold cursor-pointer"
-                >
-                  Sign In
-                </span>
-              </p>
-              <button
-                onClick={userRegister}
-                className="bg-blue-600 rounded-3xl  bottom-[20px] right-[20px] absolute w-fit  text-md text-white px-3 py-2  cursor-pointer"
-              >
-                Sign Up
-              </button>
-            </div>
-          </div>
-        ) : (
           <div className="flex w-[900px] h-[320px] p-4 relative">
             <div className="flex-1">
               <div className="text-4xl mb-7 font-semibold">YourTube</div>
-              <p className="text-4xl mb-4">SignIn To Your YourTube Account</p>
-              <span>Enter email and password.</span>
+              <p className="text-4xl mb-4">Sign In to YourTube</p>
             </div>
-            <div className="flex-1 flex flex-col justify-center gap-4 ">
-              <div className="flex flex-col gap-4 w-full relative mt-[-65px]">
-                <input
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border w-full bg-transparent outline-none p-2 rounded-sm"
-                  type="text"
-                  placeholder="Enter email"
-                />
-                <input
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border w-full bg-transparent outline-none p-2 rounded-sm"
-                  type="text"
-                  placeholder="Enter password"
-                />
-              </div>
-              <p className="text-blue-400 font-thin">
-                Dont have an account?{" "}
+            <div className="flex-1 flex flex-col gap-4">
+              <input
+                type="text"
+                placeholder="Email"
+                className="border bg-transparent p-2 rounded-sm"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                className="border bg-transparent p-2 rounded-sm"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {errorMessage && (
+                <p className="text-red-500 text-sm">{errorMessage}</p>
+              )}
+              <button
+                onClick={userLogin}
+                className="bg-blue-600 rounded-3xl px-4 py-2"
+                disabled={loading}
+              >
+                {loading ? "Logging in..." : "Sign In"}
+              </button>
+              <p>
+                Don't have an account?{" "}
                 <span
-                  onClick={() => setFormType("login")}
-                  className=" font-bold cursor-pointer"
+                  className="text-blue-400 cursor-pointer"
+                  onClick={() => setFormType("register")}
                 >
                   Sign Up
                 </span>
               </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex w-[900px] h-[420px] p-4 relative">
+            <div className="flex-1">
+              <div className="text-4xl mb-7 font-semibold">YourTube</div>
+              <p className="text-4xl mb-4">Create a YourTube Account</p>
+            </div>
+            <div className="flex-1 flex flex-col gap-4">
+              <input
+                type="text"
+                placeholder="Username"
+                className="border bg-transparent p-2 rounded-sm"
+                onChange={(e) => setName(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Email"
+                className="border bg-transparent p-2 rounded-sm"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                className="border bg-transparent p-2 rounded-sm"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                className="border bg-transparent p-2 rounded-sm"
+                onChange={(e) => setImage(e.target.files[0])}
+              />
+              {errorMessage && (
+                <p className="text-red-500 text-sm">{errorMessage}</p>
+              )}
               <button
-                onClick={userLogin}
-                className="bg-blue-600 rounded-3xl  bottom-[20px] right-[20px] absolute w-fit  text-md text-white px-3 py-2  cursor-pointer"
+                onClick={userRegister}
+                className="bg-blue-600 rounded-3xl px-4 py-2"
+                disabled={loading}
               >
-                Sign In
+                {loading ? "Signing up..." : "Sign Up"}
               </button>
+              <p>
+                Already have an account?{" "}
+                <span
+                  className="text-blue-400 cursor-pointer"
+                  onClick={() => setFormType("login")}
+                >
+                  Sign In
+                </span>
+              </p>
             </div>
           </div>
         )}
-        {/* <div className="flex flex-col items-center">
-          <h1 className="font-bold text-4xl">SignIn</h1>
-          <span className="text-xl font-semibold">To continue to YourTube</span>
-          <div className="flex flex-col w-full p-4 gap-4">
-            <input
-              onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-300 outline-none p-2 rounded-sm"
-              type="text"
-              placeholder="Enter email"
-            />
-            <input
-              onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 outline-none p-2 rounded-sm"
-              type="text"
-              placeholder="Enter password"
-            />
-            <button
-              onClick={userLogin}
-              className="bg-blue-600 w-fit mx-auto text-lg text-white px-3 py-2 rounded-sm cursor-pointer"
-            >
-              Sign In
-            </button>
-          </div>
-        </div> */}
-        {/* <div className="flex flex-col items-center">
-          <h1 className="font-bold text-4xl">Or</h1>
-          <div className="flex flex-col w-full p-4 gap-4">
-            <input
-              onChange={(e) => setName(e.target.value)}
-              className="border border-gray-300 outline-none p-2 rounded-sm"
-              type="text"
-              placeholder="Enter username"
-            />
-            <input
-              onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-300 outline-none p-2 rounded-sm"
-              type="text"
-              placeholder="Enter email"
-            />
-            <input
-              onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 outline-none p-2 rounded-sm"
-              type="text"
-              placeholder="Enter password"
-            />
-            <button className="bg-blue-600 w-fit mx-auto text-lg text-white px-3 py-2 rounded-sm cursor-pointer">
-              Sign Up
-            </button>
-          </div>
-        </div> */}
       </div>
     </div>
   );
